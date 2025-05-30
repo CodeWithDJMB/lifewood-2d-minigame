@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Modern Snake Game</title>
+
+    <!-- Bootstrap CSS (CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      /* --- Global Styles & Gradients --- */
+      body {
+        background: linear-gradient(
+          135deg,
+          #1a1a2e 0%,
+          #16213e 50%,
+          #0f3460 100%
+        );
+        color: #e0e0e0; /* Light text color for contrast */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        overflow: hidden; /* Prevent scrollbars from flashing */
+      }
+
+      /* --- Card Styling --- */
+      .game-card {
+        background: linear-gradient(
+          145deg,
+          rgba(40, 40, 60, 0.85) 0%,
+          rgba(25, 35, 70, 0.9) 100%
+        );
+        backdrop-filter: blur(10px); /* Frosted glass effect */
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        max-width: 95%; /* Responsive width */
+        width: 550px; /* Max width for larger screens */
+        transition: all 0.3s ease;
+        overflow: hidden; /* Contain elements */
+      }
+
+      .card-header,
+      .card-footer {
+        background: linear-gradient(
+          145deg,
+          rgba(50, 50, 80, 0.7) 0%,
+          rgba(35, 45, 90, 0.75) 100%
+        );
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f0f0f0;
+        font-weight: bold;
+        text-align: center;
+        padding: 0.75rem 1.25rem;
+      }
+      .card-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: none;
+      }
+
+      /* --- Canvas Styling --- */
+      #gameCanvas {
+        display: block; /* Remove extra space below canvas */
+        margin: 0 auto; /* Center canvas within its container */
+        background: linear-gradient(
+          180deg,
+          rgba(15, 20, 40, 0.9) 0%,
+          rgba(10, 15, 30, 0.95) 100%
+        );
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+        border-radius: 5px; /* Slightly rounded canvas corners */
+        max-width: 100%;
+        height: auto; /* Maintain aspect ratio */
+        image-rendering: pixelated; /* Keep grid sharp */
+        image-rendering: crisp-edges;
+      }
+
+      /* --- Button Styling --- */
+      .btn-glow {
+        background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 5px rgba(142, 45, 226, 0.5),
+          0 0 10px rgba(74, 0, 224, 0.3);
+        margin: 0.25rem;
+      }
+
+      .btn-glow:hover,
+      .btn-glow:focus {
+        color: white;
+        box-shadow: 0 0 10px rgba(142, 45, 226, 0.8),
+          0 0 20px rgba(74, 0, 224, 0.5);
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+      }
+
+      .btn-restart-glow {
+        background: linear-gradient(135deg, #ff4e50 0%, #f9d423 100%);
+        box-shadow: 0 0 5px rgba(255, 78, 80, 0.5),
+          0 0 10px rgba(249, 212, 35, 0.3);
+      }
+      .btn-restart-glow:hover,
+      .btn-restart-glow:focus {
+        box-shadow: 0 0 10px rgba(255, 78, 80, 0.8),
+          0 0 20px rgba(249, 212, 35, 0.5);
+      }
+
+      .btn-controls-glow {
+        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+        box-shadow: 0 0 5px rgba(0, 198, 255, 0.5),
+          0 0 10px rgba(0, 114, 255, 0.3);
+      }
+      .btn-controls-glow:hover,
+      .btn-controls-glow:focus {
+        box-shadow: 0 0 10px rgba(0, 198, 255, 0.8),
+          0 0 20px rgba(0, 114, 255, 0.5);
+      }
+
+      /* --- Difficulty Selection --- */
+      #difficultySelection label {
+        margin: 0 0.5rem;
+        cursor: pointer;
+        color: #ccc;
+        transition: color 0.2s ease;
+      }
+      #difficultySelection input[type="radio"] {
+        margin-right: 0.3rem;
+        accent-color: #8e2de2; /* Match gradient theme */
+      }
+      #difficultySelection label:hover {
+        color: #fff;
+      }
+
+      /* --- Modal Styling --- */
+      .modal-content {
+        background: linear-gradient(
+          145deg,
+          rgba(40, 40, 60, 0.95) 0%,
+          rgba(25, 35, 70, 0.98) 100%
+        );
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e0e0e0;
+        border-radius: 10px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+      }
+      .modal-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f0f0f0;
+      }
+      .modal-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .modal-title {
+        font-weight: bold;
+      }
+      .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%); /* Make close button white */
+      }
+      .controls-list {
+        list-style: none;
+        padding-left: 0;
+      }
+      .controls-list li {
+        margin-bottom: 0.5rem;
+      }
+      .controls-list code {
+        background-color: rgba(0, 0, 0, 0.3);
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+        color: #a1c4fd; /* Light blue for key codes */
+      }
+
+      /* Hide elements initially */
+      #gameElements {
+        display: none; /* Hidden until game starts */
+      }
+      .hidden {
+        display: none !important; /* Utility class */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-card card text-center">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <span>🐍 Modern Snake</span>
+        <div id="scoreBoard">
+          Score: <span id="currentScore">0</span> | High Score:
+          <span id="highScore">0</span>
+        </div>
+      </div>
+
+      <div class="card-body p-2 p-sm-3">
+        <!-- Difficulty Selection Area -->
+        <div id="difficultySelection" class="mb-3">
+          <label>Difficulty:</label>
+          <label
+            ><input type="radio" name="difficulty" value="easy" checked />
+            Easy</label
+          >
+          <label
+            ><input type="radio" name="difficulty" value="medium" />
+            Medium</label
+          >
+          <label
+            ><input type="radio" name="difficulty" value="hard" /> Hard</label
+          >
+        </div>
+
+        <!-- Game Elements (Canvas initially hidden) -->
+        <div id="gameElements">
+          <canvas id="gameCanvas" width="500" height="500"></canvas>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <!-- Control Buttons -->
+        <button id="startButton" class="btn btn-glow">Start (S)</button>
+        <button id="restartButton" class="btn btn-restart-glow hidden">
+          Restart (R)
+        </button>
+        <button id="controlsButton" class="btn btn-controls-glow">
+          Controls (C)
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div
+      class="modal fade"
+      id="gameOverModal"
+      tabindex="-1"
+      aria-labelledby="gameOverModalLabel"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="gameOverModalLabel">Game Over!</h5>
+            <!-- No close button here, force restart -->
+          </div>
+          <div class="modal-body">
+            <p>Final Score: <strong id="finalScore">0</strong></p>
+            <p>High Score: <strong id="modalHighScore">0</strong></p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button id="playAgainButton" type="button" class="btn btn-glow">
+              Play Again (Enter)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause / Controls Modal -->
+    <div
+      class="modal fade"
+      id="pauseModal"
+      tabindex="-1"
+      aria-labelledby="pauseModalLabel"
+      aria-hidden="true"
+      data-bs-keyboard="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="pauseModalLabel">
+              Game Paused / Controls
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>Controls:</p>
+            <ul class="controls-list">
+              <li><code>Arrow Keys</code> / <code>WASD</code> : Move Snake</li>
+              <li><code>SPACE</code> : Pause / Resume Game</li>
+              <li><code>S</code> : Start Game (Initial)</li>
+              <li>
+                <code>R</code> : Restart Game (After Game Over or During Play)
+              </li>
+              <li><code>C</code> : View Controls / Pause Game</li>
+              <li><code>ENTER</code> / <code>SPACE</code> : Close Modals</li>
+            </ul>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button
+              id="resumeButton"
+              type="button"
+              class="btn btn-glow"
+              data-bs-dismiss="modal"
+            >
+              Resume (Space)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle (CDN) -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- DOM Elements ---
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("currentScore");
+        const highScoreDisplay = document.getElementById("highScore");
+        const finalScoreDisplay = document.getElementById("finalScore");
+        const modalHighScoreDisplay = document.getElementById("modalHighScore");
+        const startButton = document.getElementById("startButton");
+        const restartButton = document.getElementById("restartButton");
+        const controlsButton = document.getElementById("controlsButton");
+        const playAgainButton = document.getElementById("playAgainButton");
+        const resumeButton = document.getElementById("resumeButton"); // Resume button in pause modal
+        const difficultySelectionDiv = document.getElementById(
+          "difficultySelection"
+        );
+        const gameElementsDiv = document.getElementById("gameElements");
+
+        // --- Modals (Bootstrap Instances) ---
+        const gameOverModalEl = document.getElementById("gameOverModal");
+        const pauseModalEl = document.getElementById("pauseModal");
+        const gameOverModal = new bootstrap.Modal(gameOverModalEl);
+        const pauseModal = new bootstrap.Modal(pauseModalEl);
+
+        // Close modals on Enter/Space if they are shown
+        const handleModalCloseKey = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            if (gameOverModalEl.classList.contains("show")) {
+              e.preventDefault(); // Prevent default space behavior (scrolling)
+              playAgainButton.click();
+            } else if (pauseModalEl.classList.contains("show")) {
+              e.preventDefault();
+              pauseModal.hide(); // Will trigger the 'hidden.bs.modal' event for resuming
+            }
+          }
+        };
+
+        // --- Game Settings & State ---
+        const gridSize = 20; // Size of each grid cell
+        let tileCountX = canvas.width / gridSize;
+        let tileCountY = canvas.height / gridSize;
+        let snake,
+          food,
+          dx,
+          dy,
+          score,
+          highScore,
+          gameSpeed,
+          difficulty,
+          gameInterval,
+          isGameOver,
+          isPaused,
+          canChangeDirection;
+
+        // --- Difficulty Settings ---
+        const difficulties = {
+          easy: 120, // milliseconds per update
+          medium: 90,
+          hard: 60,
+        };
+
+        // --- Initialization ---
+        function initGameVariables() {
+          snake = [
+            { x: Math.floor(tileCountX / 2), y: Math.floor(tileCountY / 2) },
+          ]; // Start in center
+          food = { x: -1, y: -1 }; // Initial invalid position
+          dx = 0; // Initial direction (stopped)
+          dy = 0;
+          score = 0;
+          highScore = localStorage.getItem("snakeHighScore") || 0;
+          isGameOver = false;
+          isPaused = false;
+          canChangeDirection = true; // Allow immediate direction change at start
+          difficulty = document.querySelector(
+            'input[name="difficulty"]:checked'
+          ).value;
+          gameSpeed = difficulties[difficulty];
+          if (gameInterval) clearInterval(gameInterval); // Clear previous interval if any
+          gameInterval = null;
+
+          updateScoreDisplay();
+          placeFood(); // Place initial food
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+          if (isGameOver || isPaused) return;
+
+          canChangeDirection = true; // Reset direction change lock
+          clearCanvas();
+          moveSnake();
+          if (isGameOver) return; // Check collision *after* moving
+          drawGrid(); // Draw grid behind snake/food
+          drawFood();
+          drawSnake();
+        }
+
+        // --- Drawing Functions ---
+        function clearCanvas() {
+          // Create a subtle gradient background for the canvas
+          const gradient = ctx.createLinearGradient(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          gradient.addColorStop(0, "#0a0f1a"); // Darker blue/black
+          gradient.addColorStop(1, "#101528"); // Slightly lighter blue/black
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawGrid() {
+          // Optional: Draw subtle grid lines
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.05)"; // Very faint lines
+          ctx.lineWidth = 0.5;
+          for (let i = 1; i < tileCountX; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * gridSize, 0);
+            ctx.lineTo(i * gridSize, canvas.height);
+            ctx.stroke();
+          }
+          for (let i = 1; i < tileCountY; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, i * gridSize);
+            ctx.lineTo(canvas.width, i * gridSize);
+            ctx.stroke();
+          }
+        }
+
+        function drawSnake() {
+          snake.forEach((segment, index) => {
+            // Gradient for snake segments
+            const gradient = ctx.createRadialGradient(
+              segment.x * gridSize + gridSize / 2,
+              segment.y * gridSize + gridSize / 2,
+              gridSize * 0.1,
+              segment.x * gridSize + gridSize / 2,
+              segment.y * gridSize + gridSize / 2,
+              gridSize * 0.6
+            );
+            gradient.addColorStop(0, "#a8ff78"); // Lighter green center
+            gradient.addColorStop(1, "#78ffd6"); // Teal edge
+
+            ctx.fillStyle = gradient;
+            // Glowing effect (subtle outer glow)
+            ctx.shadowColor = "rgba(120, 255, 214, 0.6)";
+            ctx.shadowBlur = 8;
+
+            ctx.fillRect(
+              segment.x * gridSize,
+              segment.y * gridSize,
+              gridSize - 1,
+              gridSize - 1
+            ); // -1 for grid lines
+            ctx.shadowBlur = 0; // Reset shadow blur for next element
+          });
+        }
+
+        function drawFood() {
+          // Gradient for food
+          const gradient = ctx.createRadialGradient(
+            food.x * gridSize + gridSize / 2,
+            food.y * gridSize + gridSize / 2,
+            gridSize * 0.1,
+            food.x * gridSize + gridSize / 2,
+            food.y * gridSize + gridSize / 2,
+            gridSize * 0.5
+          );
+          gradient.addColorStop(0, "#ff8c94"); // Lighter pink/red center
+          gradient.addColorStop(1, "#ff4b5c"); // Red edge
+
+          ctx.fillStyle = gradient;
+          // Glowing effect
+          ctx.shadowColor = "rgba(255, 75, 92, 0.7)";
+          ctx.shadowBlur = 10;
+
+          ctx.fillRect(
+            food.x * gridSize,
+            food.y * gridSize,
+            gridSize,
+            gridSize
+          );
+          ctx.shadowBlur = 0; // Reset shadow blur
+        }
+
+        // --- Movement & Collision ---
+        function moveSnake() {
+          if (dx === 0 && dy === 0) return; // Don't move if game hasn't started with a direction
+
+          const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+          // Wrap-around logic
+          if (head.x < 0) head.x = tileCountX - 1;
+          if (head.x >= tileCountX) head.x = 0;
+          if (head.y < 0) head.y = tileCountY - 1;
+          if (head.y >= tileCountY) head.y = 0;
+
+          // Check self-collision BEFORE adding the new head
+          if (checkSelfCollision(head)) {
+            triggerGameOver();
+            return; // Stop processing movement if game over
+          }
+
+          snake.unshift(head); // Add new head
+
+          // Check food collision
+          if (head.x === food.x && head.y === food.y) {
+            score++;
+            updateScoreDisplay();
+            placeFood(); // Place new food
+          } else {
+            snake.pop(); // Remove tail if no food eaten
+          }
+        }
+
+        function checkSelfCollision(head) {
+          // Check if the head collides with any part of the body
+          // Start from index 1 because index 0 is the head itself (before it's formally added)
+          for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+              return true; // Collision detected
+            }
+          }
+          return false; // No collision
+        }
+
+        function placeFood() {
+          let newFoodX, newFoodY, foodOnSnake;
+          do {
+            foodOnSnake = false;
+            newFoodX = Math.floor(Math.random() * tileCountX);
+            newFoodY = Math.floor(Math.random() * tileCountY);
+            // Check if the new food location is on the snake
+            for (const segment of snake) {
+              if (segment.x === newFoodX && segment.y === newFoodY) {
+                foodOnSnake = true;
+                break;
+              }
+            }
+          } while (foodOnSnake); // Keep trying until a valid spot is found
+
+          food = { x: newFoodX, y: newFoodY };
+        }
+
+        // --- Game State Management ---
+        function startGame() {
+          if (gameInterval) return; // Don't start if already running
+
+          initGameVariables(); // Set up variables based on selected difficulty
+
+          // Hide difficulty selection, show canvas & restart button
+          difficultySelectionDiv.classList.add("hidden");
+          gameElementsDiv.style.display = "block"; // Show canvas container
+          startButton.classList.add("hidden");
+          restartButton.classList.remove("hidden");
+          controlsButton.disabled = false; // Enable controls button
+
+          // Start the game loop *after* a direction key is pressed for the first time
+          // But draw initial state immediately
+          clearCanvas();
+          drawGrid();
+          drawFood();
+          drawSnake();
+
+          // The loop will start effectively when dx/dy are non-zero after first key press
+          // Or, uncomment below to start moving immediately (usually less user-friendly)
+          // dx = 1; dy = 0; // Example: start moving right
+          // gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+
+        function triggerGameOver() {
+          isGameOver = true;
+          clearInterval(gameInterval);
+          gameInterval = null;
+
+          // Update High Score in localStorage
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("snakeHighScore", highScore);
+          }
+
+          // Update and show Game Over Modal
+          finalScoreDisplay.textContent = score;
+          modalHighScoreDisplay.textContent = highScore;
+          updateScoreDisplay(); // Ensure header score is also up-to-date
+          gameOverModal.show();
+
+          // Prepare for restart
+          restartButton.classList.remove("hidden"); // Keep restart visible
+          controlsButton.disabled = true; // Disable controls during game over screen
+          difficultySelectionDiv.classList.remove("hidden"); // Show difficulty options again
+        }
+
+        function restartGame() {
+          gameOverModal.hide();
+          pauseModal.hide(); // Ensure pause modal is hidden too
+
+          // Reset UI elements
+          gameElementsDiv.style.display = "none"; // Hide canvas
+          startButton.classList.remove("hidden"); // Show start button
+          restartButton.classList.add("hidden"); // Hide restart button
+          controlsButton.disabled = false; // Re-enable controls button for next game start
+          difficultySelectionDiv.classList.remove("hidden"); // Ensure difficulty selection is visible
+          difficultySelectionDiv
+            .querySelectorAll('input[type="radio"]')
+            .forEach((radio) => (radio.disabled = false)); // Enable difficulty radios
+
+          // Clear interval just in case
+          if (gameInterval) clearInterval(gameInterval);
+          gameInterval = null;
+
+          // Reset score display for the header immediately
+          score = 0;
+          updateScoreDisplay();
+          // Variables will be fully reset by startGame() when the user clicks Start again
+        }
+
+        function togglePause() {
+          if (isGameOver) return; // Cannot pause if game is over
+
+          if (isPaused) {
+            // Resume
+            isPaused = false;
+            pauseModal.hide(); // Hide the modal
+            // Resume loop if it was running (i.e., game had started with movement)
+            if (!gameInterval && (dx !== 0 || dy !== 0)) {
+              gameInterval = setInterval(gameLoop, gameSpeed);
+            }
+          } else {
+            // Pause
+            isPaused = true;
+            // No need to clear interval here, loop simply stops executing
+            pauseModal.show(); // Show the pause/controls modal
+          }
+        }
+
+        function showControlsModal() {
+          if (!isPaused && !isGameOver && gameInterval) {
+            // Only auto-pause if game is actively running
+            isPaused = true;
+          }
+          pauseModal.show();
+        }
+
+        // --- UI Updates ---
+        function updateScoreDisplay() {
+          scoreDisplay.textContent = score;
+          highScoreDisplay.textContent = highScore; // Update header high score too
+        }
+
+        // --- Event Listeners ---
+        function handleKeyDown(e) {
+          // Prevent default browser behavior for arrow keys and space
+          if (
+            [
+              "ArrowUp",
+              "ArrowDown",
+              "ArrowLeft",
+              "ArrowRight",
+              " ",
+              "Spacebar",
+            ].includes(e.key)
+          ) {
+            e.preventDefault();
+          }
+
+          // Modal closing handled separately
+          handleModalCloseKey(e);
+          if (
+            gameOverModalEl.classList.contains("show") ||
+            pauseModalEl.classList.contains("show")
+          ) {
+            return; // Don't process game controls if a modal is open
+          }
+
+          // Game State Controls
+          if (e.key === "s" || e.key === "S") {
+            if (!gameInterval && !isGameOver) startGame();
+          } else if (e.key === "r" || e.key === "R") {
+            restartGame();
+          } else if (e.key === "c" || e.key === "C") {
+            showControlsModal();
+          } else if (e.key === " " || e.key === "Shift") {
+            // Space or Shift for Pause/Resume
+            if (gameInterval || isPaused) {
+              // Allow pause toggle only if game started or is paused
+              togglePause();
+            }
+          }
+
+          // Snake Movement (only if game is running and not paused)
+          if (!isPaused && !isGameOver && canChangeDirection) {
+            let newDx = dx;
+            let newDy = dy;
+
+            switch (e.key) {
+              case "ArrowUp":
+              case "w":
+              case "W":
+                if (dy === 0) {
+                  newDx = 0;
+                  newDy = -1;
+                } // Prevent moving directly opposite
+                break;
+              case "ArrowDown":
+              case "s":
+              case "S":
+                // Allow 'S' for start, but prioritize down movement if game is running
+                if (dy === 0 && (dx !== 0 || dy !== 0)) {
+                  newDx = 0;
+                  newDy = 1;
+                } else if (dy === 0 && dx === 0) {
+                  // Handle 'S' to start game AND move down
+                  startGame(); // Attempt to start if not started
+                  newDx = 0;
+                  newDy = 1; // Set initial direction
+                }
+                break;
+              case "ArrowLeft":
+              case "a":
+              case "A":
+                if (dx === 0) {
+                  newDx = -1;
+                  newDy = 0;
+                }
+                break;
+              case "ArrowRight":
+              case "d":
+              case "D":
+                if (dx === 0) {
+                  newDx = 1;
+                  newDy = 0;
+                }
+                break;
+            }
+
+            // If direction changed, update and lock direction change until next frame
+            if (newDx !== dx || newDy !== dy) {
+              dx = newDx;
+              dy = newDy;
+              canChangeDirection = false;
+
+              // If the game hasn't formally started the loop yet (was waiting for first move)
+              if (!gameInterval && (dx !== 0 || dy !== 0)) {
+                gameInterval = setInterval(gameLoop, gameSpeed);
+              }
+            }
+          }
+        }
+
+        document.addEventListener("keydown", handleKeyDown);
+
+        startButton.addEventListener("click", startGame);
+        restartButton.addEventListener("click", restartGame);
+        playAgainButton.addEventListener("click", restartGame);
+        controlsButton.addEventListener("click", showControlsModal);
+        resumeButton.addEventListener("click", () => {
+          // Resume button explicitly triggers pause toggle
+          if (isPaused) {
+            togglePause(); // This will hide the modal and resume
+          }
+        });
+
+        // Resume game when pause modal is closed (by any means: button, Esc, backdrop click)
+        pauseModalEl.addEventListener("hidden.bs.modal", () => {
+          if (isPaused && !isGameOver) {
+            // Ensure we only resume if it was paused state
+            isPaused = false;
+            // Resume loop if it was running
+            if (!gameInterval && (dx !== 0 || dy !== 0)) {
+              gameInterval = setInterval(gameLoop, gameSpeed);
+            }
+          }
+        });
+
+        // Disable difficulty change once game starts
+        difficultySelectionDiv
+          .querySelectorAll('input[type="radio"]')
+          .forEach((radio) => {
+            radio.addEventListener("change", () => {
+              if (gameInterval || isPaused) {
+                // If game is active or paused, disable changes
+                radio.checked = radio.value === difficulty; // Revert if needed (though should be disabled)
+              } else {
+                difficulty = radio.value; // Update difficulty if changed before starting
+                gameSpeed = difficulties[difficulty];
+              }
+            });
+          });
+
+        // Initial setup on load
+        updateScoreDisplay(); // Load initial high score
+        controlsButton.disabled = true; // Can't view controls until game could be paused
+
+        // Responsive Canvas - Adjust tile count based on container size
+        // Note: This basic resize requires a restart to take effect fully.
+        // More complex resizing would involve redrawing everything proportionally.
+        function resizeCanvas() {
+          const cardBody = document.querySelector(".card-body");
+          const maxWidth = cardBody.clientWidth - 20; // Account for padding
+          const maxHeight = window.innerHeight * 0.6; // Limit height reasonably
+          const size = Math.min(maxWidth, maxHeight, 500); // Use smallest dimension, max 500
+
+          // Snap to nearest grid size multiple
+          const newSize = Math.floor(size / gridSize) * gridSize;
+
+          if (canvas.width !== newSize) {
+            canvas.width = newSize;
+            canvas.height = newSize; // Keep it square
+            tileCountX = canvas.width / gridSize;
+            tileCountY = canvas.height / gridSize;
+
+            // If game is not running, redraw initial state.
+            // If running, resizing ideally needs restart or more complex state handling.
+            if (!gameInterval && !isPaused && !isGameOver) {
+              // Could potentially redraw initial screen elements here if needed
+              // For simplicity, requires restart after resize for now.
+            }
+          }
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas(); // Initial size check
+      });
+    </script>
+  </body>
+</html>
